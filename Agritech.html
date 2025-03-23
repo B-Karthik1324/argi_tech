@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Disease Identifier</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            text-align: center;
+        }
+        .container {
+            margin: 20px;
+        }
+        h2 {
+            color: #2e6da4;
+        }
+        input[type="file"] {
+            padding: 10px;
+            margin: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            background-color: #28a745;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .result-card {
+            display: none;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: left;
+            max-width: 600px;
+            margin: 20px auto;
+            cursor: pointer;
+        }
+        .result-card h2 {
+            color: #333;
+            margin: 0;
+            padding: 10px;
+            background-color: #2e6da4;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .result-card p {
+            font-size: 16px;
+        }
+        .collapsible {
+            background-color: #2e6da4;
+            color: white;
+            padding: 10px;
+            border: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .collapsible:hover {
+            background-color: #218838;
+        }
+        .content {
+            padding: 10px;
+            display: none;
+            text-align: left;
+        }
+        .reset-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #ffc107;
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .reset-btn:hover {
+            background-color: #e0a800;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>🌿 Plant Disease Identifier</h2>
+        <input type="file" id="fileInput" accept="image/*">
+        <button onclick="uploadImage()">🔍 Identify Disease</button>
+        
+        <div class="result-card" id="resultCard">
+            <h2 id="diseaseName">Click to Expand Result</h2>
+            <p><strong>Confidence:</strong> <span id="confidence"></span>%</p>
+
+            <button class="collapsible">Causes</button>
+            <div class="content" id="causes"></div>
+
+            <button class="collapsible">Cure</button>
+            <div class="content" id="cure"></div>
+
+            <button class="collapsible">Prevention</button>
+            <div class="content" id="prevention"></div>
+
+            <button class="collapsible">Recommendations</button>
+            <div class="content" id="recommendations"></div>
+
+            <button class="reset-btn" onclick="resetPage()">🔄 Test Another Plant</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL ="https://a849-34-16-130-70.ngrok-free.app/xredict";  // Update with your Ngrok or local URL
+
+        function uploadImage() {
+            let fileInput = document.getElementById("fileInput");
+            if (!fileInput.files.length) {
+                alert("Please select an image!");
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            fetch(API_URL, {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert("Error: " + data.error);
+                    return;
+                }
+
+                // Set the disease name and confidence
+                document.getElementById("diseaseName").innerText = data.disease;
+                document.getElementById("confidence").innerText = (data.confidence * 100).toFixed(1);
+
+                // Update causes, cure, prevention, and recommendations
+                document.getElementById("causes").innerHTML = formatList(data.causes, "Causes");
+                document.getElementById("cure").innerHTML = formatList(data.cure, "Cure");
+                document.getElementById("prevention").innerHTML = formatList(data.prevention, "Prevention");
+                document.getElementById("recommendations").innerHTML = formatList(data.recommendations, "Recommendations");
+
+                // Show the result card
+                document.getElementById("resultCard").style.display = "block";
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function formatList(items, title) {
+            if (!items || items.length === 0) {
+                return `<p>No information available for ${title}.</p>`;
+            }
+            let listHtml = `<h4>${title}:</h4>`;
+            return listHtml + items.map(item => `<p><span>•</span> ${item}</p>`).join("");
+        }
+
+        function resetPage() {
+            document.getElementById("resultCard").style.display = "none";
+            document.getElementById("fileInput").value = "";  // Reset the file input
+        }
+
+        // Collapsible functionality for the result card
+        document.getElementById("diseaseName").addEventListener("click", function() {
+            var resultCard = document.getElementById("resultCard");
+            if (resultCard.style.display === "block") {
+                resultCard.style.display = "none";
+            } else {
+                resultCard.style.display = "block";
+            }
+        });
+
+        // Collapsible functionality for each section
+        var coll = document.getElementsByClassName("collapsible");
+        for (var i = 0; i < coll.length; i++) {
+            coll[i].addEventListener("click", function() {
+                this.classList.toggle("active");
+                var content = this.nextElementSibling;
+                if (content.style.display === "block") {
+                    content.style.display = "none";
+                } else {
+                    content.style.display = "block";
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>
